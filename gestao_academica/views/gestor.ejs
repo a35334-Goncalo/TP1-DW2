@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestor Pedagógico</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<nav>
+    <a href="/gestor" class="nav-brand">Gestão Académica <span>| Gestão Pedagógica</span></a>
+    <div class="nav-links">
+        <span>Olá, <%= user.nome %></span>
+        <a href="/logout" class="logout-btn">Terminar Sessão</a>
+    </div>
+</nav>
+
+<div class="container">
+    <% if(erro) { %> <div class="alert alert-danger"><%= erro %></div> <% } %>
+    <% if(sucesso) { %> <div class="alert alert-success"><%= sucesso %></div> <% } %>
+
+    <!-- FICHAS DE ALUNO -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Validação de Fichas de Aluno</h2>
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Aluno / Foto</th>
+                        <th>Dados Pessoais</th>
+                        <th>Estado & Auditoria</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% fichas.forEach(f => { %>
+                    <tr>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <% if(f.foto) { %>
+                                    <img src="/uploads/<%= f.foto %>" class="foto-preview">
+                                <% } else { %>
+                                    <div class="foto-preview" style="background:#E5E7EB; display:flex; align-items:center; justify-content:center; color:#9CA3AF;">N/D</div>
+                                <% } %>
+                                <strong><%= f.user_id ? f.user_id.nome : 'Utilizador N/D' %></strong>
+                            </div>
+                        </td>
+                        <td style="font-size: 0.85rem; line-height:1.5;">
+                            <% const data = f.dados ? f.dados.split(', ') : []; %>
+                            <% data.forEach(d => { %>
+                                <div><%= d %></div>
+                            <% }) %>
+                        </td>
+                        <td>
+                            <span class="badge badge-<%= f.estado === 'submetida' ? 'pending' : (f.estado === 'Aprovada' ? 'success' : (f.estado === 'Rejeitada' ? 'danger' : 'draft')) %>">
+                                <%= f.estado %>
+                            </span>
+                            <br>
+                            <% if (f.estado === 'Aprovada' || f.estado === 'Rejeitada') { %>
+                                <small style="color: var(--text-muted); display:inline-block; margin-top:4px;">
+                                    Validado por: <%= f.validado_por ? f.validado_por.nome : 'N/D' %>
+                                </small>
+                            <% } %>
+                        </td>
+                        <td>
+                            <% if(f.estado === 'submetida') { %>
+                                <form method="POST" action="/gestor/ficha/<%= f._id %>" class="flex gap-2" style="align-items: center;">
+                                    <select name="estado" required style="width: auto; margin:0;">
+                                        <option value="">Ação...</option>
+                                        <option value="Aprovada">Aprovar</option>
+                                        <option value="Rejeitada">Rejeitar</option>
+                                    </select>
+                                    <input type="text" name="observacoes" placeholder="Obs..." style="width: 120px; margin:0;">
+                                    <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;">OK</button>
+                                </form>
+                            <% } else if(f.estado === 'rascunho') { %>
+                                <span style="font-size: 0.85rem; color: var(--text-muted);">A aguardar submissão</span>
+                            <% } else { %>
+                                <span style="font-size: 0.85rem;"><%= f.observacoes || 'Sem observações' %></span>
+                            <% } %>
+                        </td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- CURSOS & UCS (2 Columns) -->
+    <div class="grid grid-cols-2">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Gestão de Cursos</h2>
+            </div>
+            <form method="POST" action="/gestor/curso" class="flex gap-2 mb-4">
+                <input type="hidden" name="id" id="curso_id">
+                <div style="flex:1;">
+                    <input type="text" name="nome" id="curso_nome" required placeholder="Nome do Curso" style="margin:0;">
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="desativar" id="curso_desativar" style="width:auto; margin:0;">
+                    <label for="curso_desativar" style="margin:0;">Inativo</label>
+                </div>
+                <button type="submit" class="btn btn-secondary" style="padding:0.5rem 1rem;">Salvar</button>
+                <button type="button" class="btn btn-outline" style="padding:0.5rem 1rem;" onclick="resetCursoForm()">Novo</button>
+            </form>
+
+            <div class="table-responsive" style="max-height: 300px; overflow-y:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Curso</th>
+                            <th>Estado</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% cursos.forEach(c => { %>
+                        <tr>
+                            <td><%= c.nome %></td>
+                            <td>
+                                <span class="badge badge-<%= c.ativo ? 'success' : 'danger' %>"><%= c.ativo ? 'Ativo' : 'Inativo' %></span>
+                            </td>
+                            <td>
+                                <div class="flex gap-2">
+                                    <button type="button" class="btn btn-outline btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;" data-id="<%= c._id %>" data-nome="<%= c.nome %>" data-desativado="<%= !c.ativo %>" onclick="editCurso(this)">Edit</button>
+                                    <form method="POST" action="/gestor/curso/delete" onsubmit="return confirm('Eliminar curso?')">
+                                        <input type="hidden" name="id" value="<%= c._id %>">
+                                        <button type="submit" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">Del</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Gestão de UCs</h2>
+            </div>
+            <form method="POST" action="/gestor/uc" class="flex gap-2 mb-4">
+                <input type="hidden" name="id" id="uc_id">
+                <div style="flex:1;">
+                    <input type="text" name="nome" id="uc_nome" required placeholder="Nome da UC" style="margin:0;">
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="desativar" id="uc_desativar" style="width:auto; margin:0;">
+                    <label for="uc_desativar" style="margin:0;">Inativo</label>
+                </div>
+                <button type="submit" class="btn btn-secondary" style="padding:0.5rem 1rem;">Salvar</button>
+                <button type="button" class="btn btn-outline" style="padding:0.5rem 1rem;" onclick="resetUcForm()">Novo</button>
+            </form>
+
+            <div class="table-responsive" style="max-height: 300px; overflow-y:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>UC</th>
+                            <th>Estado</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% ucs.forEach(u => { %>
+                        <tr>
+                            <td><%= u.nome %></td>
+                            <td>
+                                <span class="badge badge-<%= u.ativo ? 'success' : 'danger' %>"><%= u.ativo ? 'Ativo' : 'Inativo' %></span>
+                            </td>
+                            <td>
+                                <div class="flex gap-2">
+                                    <button type="button" class="btn btn-outline btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;" data-id="<%= u._id %>" data-nome="<%= u.nome %>" data-desativado="<%= !u.ativo %>" onclick="editUc(this)">Edit</button>
+                                    <form method="POST" action="/gestor/uc/delete" onsubmit="return confirm('Eliminar UC?')">
+                                        <input type="hidden" name="id" value="<%= u._id %>">
+                                        <button type="submit" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">Del</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLANO DE ESTUDOS -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Plano de Estudos</h2>
+        </div>
+        
+        <form method="POST" action="/gestor/plano" class="flex gap-4 items-end mb-4">
+            <div class="form-group" style="flex:2; margin:0;">
+                <label>Curso</label>
+                <select name="curso_id" required>
+                    <option value="">-- Selecione --</option>
+                    <% cursos.forEach(c => { %> <option value="<%= c._id %>"><%= c.nome %></option> <% }) %>
+                </select>
+            </div>
+            <div class="form-group" style="flex:2; margin:0;">
+                <label>Unidade Curricular</label>
+                <select name="uc_id" required>
+                    <option value="">-- Selecione --</option>
+                    <% ucs.forEach(u => { %> <option value="<%= u._id %>"><%= u.nome %></option> <% }) %>
+                </select>
+            </div>
+            <div class="form-group" style="flex:1; margin:0;">
+                <label>Ano</label>
+                <input type="number" name="ano" min="1" required>
+            </div>
+            <div class="form-group" style="flex:1; margin:0;">
+                <label>Semestre</label>
+                <input type="number" name="semestre" min="1" max="2" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="height: 42px;">Associar UC</button>
+        </form>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Curso</th>
+                        <th>Unidade Curricular</th>
+                        <th>Ano Curricular</th>
+                        <th>Semestre</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% plano.forEach(p => { %>
+                    <tr>
+                        <td><%= p.curso_id ? p.curso_id.nome : 'N/D' %></td>
+                        <td><%= p.uc_id ? p.uc_id.nome : 'N/D' %></td>
+                        <td><%= p.ano %>º Ano</td>
+                        <td><%= p.semestre %>º Semestre</td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function editCurso(btn) {
+        document.getElementById('curso_id').value = btn.getAttribute('data-id');
+        document.getElementById('curso_nome').value = btn.getAttribute('data-nome');
+        document.getElementById('curso_desativar').checked = btn.getAttribute('data-desativado') === 'true';
+    }
+
+    function editUc(btn) {
+        document.getElementById('uc_id').value = btn.getAttribute('data-id');
+        document.getElementById('uc_nome').value = btn.getAttribute('data-nome');
+        document.getElementById('uc_desativar').checked = btn.getAttribute('data-desativado') === 'true';
+    }
+
+    function resetCursoForm() {
+        document.getElementById('curso_id').value = '';
+        document.getElementById('curso_nome').value = '';
+        document.getElementById('curso_desativar').checked = false;
+    }
+    
+    function resetUcForm() {
+        document.getElementById('uc_id').value = '';
+        document.getElementById('uc_nome').value = '';
+        document.getElementById('uc_desativar').checked = false;
+    }
+</script>
+</body>
+</html>

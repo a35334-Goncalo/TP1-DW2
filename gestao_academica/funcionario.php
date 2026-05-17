@@ -50,8 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['criar_pauta'])) {
             SELECT m.user_id, u.nome
             FROM matriculas m
             JOIN users u ON m.user_id = u.id
-            WHERE m.estado = 'Aprovado' AND m.curso_id = (
-                SELECT curso_id FROM ucs WHERE id = ?
+            WHERE m.estado = 'Aprovado' AND m.curso_id IN (
+                SELECT curso_id FROM plano_estudos WHERE uc_id = ?
             )
         ");
         $stmt->execute([$uc_id]);

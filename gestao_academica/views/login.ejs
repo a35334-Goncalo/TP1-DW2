@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Gestão Académica</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="align-items: center; justify-content: center;">
+
+<div class="card" style="width: 100%; max-width: 420px; margin: auto;">
+    <div class="text-center mb-4">
+        <h1 class="card-title" style="color: var(--primary); font-size: 1.8rem;">Gestão Académica</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Bem-vindo de volta! Por favor, inicie sessão.</p>
+    </div>
+
+    <% if(erro) { %>
+        <div class="alert alert-danger"><%= erro %></div>
+    <% } %>
+
+    <form method="POST" action="/login">
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" name="email" required placeholder="Ex: aluno@escola.pt">
+        </div>
+        <div class="form-group">
+            <label for="password">Palavra-passe</label>
+            <input type="password" id="password" name="password" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary w-full" style="margin-top: 1rem;">Entrar</button>
+    </form>
+    
+    <div class="text-center" style="margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-muted);">
+        <p>Acesso pela primeira vez? <a href="/seed" style="color: var(--primary); font-weight: 500;">Gerar utilizadores de teste</a></p>
+    </div>
+</div>
+
+</body>
+</html>

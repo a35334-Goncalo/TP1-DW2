@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Área do Aluno</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<nav>
+    <a href="/aluno" class="nav-brand">Gestão Académica <span>| Aluno</span></a>
+    <div class="nav-links">
+        <span>Olá, <%= user.nome %></span>
+        <a href="/logout" class="logout-btn">Terminar Sessão</a>
+    </div>
+</nav>
+
+<div class="container">
+    <% if(erro) { %> <div class="alert alert-danger"><%= erro %></div> <% } %>
+    <% if(sucesso) { %> <div class="alert alert-success"><%= sucesso %></div> <% } %>
+
+    <div class="grid grid-cols-2">
+        <!-- FICHA DE ALUNO -->
+        <div class="card">
+            <div class="card-header flex justify-between items-center">
+                <h2 class="card-title">A Minha Ficha</h2>
+                <% if(ficha.estado) { %>
+                    <span class="badge badge-<%= ficha.estado === 'submetida' ? 'pending' : (ficha.estado === 'Aprovada' ? 'success' : (ficha.estado === 'Rejeitada' ? 'danger' : 'draft')) %>">
+                        <%= ficha.estado.charAt(0).toUpperCase() + ficha.estado.slice(1) %>
+                    </span>
+                <% } %>
+            </div>
+
+            <form method="POST" action="/aluno/ficha" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" name="nome" required value="<%= ficha.dados ? ficha.dados.match(/Nome: ([^,]*)/)?.[1] : '' %>">
+                </div>
+                
+                <div class="grid grid-cols-2">
+                    <div class="form-group">
+                        <label>Idade</label>
+                        <input type="number" name="idade" required value="<%= ficha.dados ? ficha.dados.match(/Idade: (\d+)/)?.[1] : '' %>">
+                    </div>
+                    <div class="form-group">
+                        <label>Contacto</label>
+                        <input type="text" name="contacto" required placeholder="Telefone" value="<%= ficha.dados ? ficha.dados.match(/Contacto: ([^,]*)/)?.[1] || '' : '' %>">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Curso Pretendido</label>
+                    <select name="curso_id" required>
+                        <option value="">--Selecione o Curso--</option>
+                        <% cursos.forEach(c => { %>
+                            <option value="<%= c._id %>" <%= ficha.dados && ficha.dados.includes('Curso ID: ' + c._id) ? 'selected' : '' %>><%= c.nome %></option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <div class="form-group flex items-center gap-4">
+                    <div style="flex: 1;">
+                        <label>Fotografia (Opcional)</label>
+                        <input type="file" name="foto" style="padding:0; border:none; background:transparent;">
+                    </div>
+                    <% if(ficha.foto) { %>
+                        <img src="/uploads/<%= ficha.foto %>" class="foto-preview" alt="Foto de perfil">
+                    <% } %>
+                </div>
+
+                <div class="flex gap-2 mt-4">
+                    <button type="submit" name="acao_ficha" value="salvar" class="btn btn-outline" style="flex: 1;">Guardar Rascunho</button>
+                    <button type="submit" name="acao_ficha" value="submeter" class="btn btn-primary" style="flex: 1;">Submeter Ficha</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- PEDIDOS DE MATRÍCULA -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Matrículas</h2>
+            </div>
+            
+            <form method="POST" action="/aluno/matricula" class="mb-4 flex items-end gap-2">
+                <div class="form-group" style="margin-bottom:0; flex:1;">
+                    <label>Novo Pedido de Matrícula</label>
+                    <select name="curso_id" required>
+                        <option value="">--Selecione um Curso--</option>
+                        <% cursos.forEach(c => { %>
+                            <option value="<%= c._id %>"><%= c.nome %></option>
+                        <% }) %>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-secondary" style="height: 42px;">Criar Pedido</button>
+            </form>
+
+            <h3 style="font-size: 1rem; color: var(--text-muted); margin-bottom: 1rem;">O Meu Histórico</h3>
+            <% if(pedidos.length === 0) { %>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Não realizou nenhum pedido ainda.</p>
+            <% } else { %>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Curso</th>
+                                <th>Estado</th>
+                                <th>Observações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% pedidos.forEach(p => { %>
+                            <tr>
+                                <td><%= p.curso_id ? p.curso_id.nome : 'Curso N/D' %><br><small style="color:var(--text-muted)"><%= p.data_pedido.toLocaleDateString() %></small></td>
+                                <td>
+                                    <span class="badge badge-<%= p.estado === 'Pendente' ? 'pending' : (p.estado === 'Aprovado' ? 'success' : 'danger') %>">
+                                        <%= p.estado %>
+                                    </span>
+                                </td>
+                                <td style="font-size: 0.85rem;"><%= p.observacoes || '-' %></td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

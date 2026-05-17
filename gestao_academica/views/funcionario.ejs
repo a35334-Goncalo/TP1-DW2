@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Área do Funcionário</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<nav>
+    <a href="/funcionario" class="nav-brand">Gestão Académica <span>| Serviços Académicos</span></a>
+    <div class="nav-links">
+        <span>Olá, <%= user.nome %></span>
+        <a href="/logout" class="logout-btn">Terminar Sessão</a>
+    </div>
+</nav>
+
+<div class="container">
+    <% if(erro) { %> <div class="alert alert-danger"><%= erro %></div> <% } %>
+    <% if(sucesso) { %> <div class="alert alert-success"><%= sucesso %></div> <% } %>
+
+    <!-- MATRÍCULAS PENDENTES -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Gestão de Pedidos de Matrícula</h2>
+        </div>
+        <% if(pedidos.length === 0) { %>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Nenhum pedido de matrícula disponível.</p>
+        <% } else { %>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Aluno</th>
+                            <th>Curso</th>
+                            <th>Estado & Data</th>
+                            <th>Auditoria</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% pedidos.forEach(p => { %>
+                        <tr>
+                            <td style="font-weight: 500;"><%= p.user_id ? p.user_id.nome : 'N/D' %></td>
+                            <td><%= p.curso_id ? p.curso_id.nome : 'N/D' %></td>
+                            <td>
+                                <span class="badge badge-<%= p.estado === 'Pendente' ? 'pending' : (p.estado === 'Aprovado' ? 'success' : 'danger') %>">
+                                    <%= p.estado %>
+                                </span><br>
+                                <small style="color: var(--text-muted)"><%= p.data_pedido.toLocaleDateString() %></small>
+                            </td>
+                            <td style="font-size: 0.85rem; color: var(--text-muted);">
+                                <% if (p.estado !== 'Pendente') { %>
+                                    Validado por <strong><%= p.validado_por ? p.validado_por.nome : 'N/D' %></strong><br>
+                                    <%= p.data_validacao ? p.data_validacao.toLocaleDateString() : '' %>
+                                <% } else { %>
+                                    -
+                                <% } %>
+                            </td>
+                            <td>
+                                <% if(p.estado === 'Pendente') { %>
+                                    <form method="POST" action="/funcionario/pedido/<%= p._id %>" class="flex gap-2">
+                                        <select name="estado" required style="width: auto; margin:0;">
+                                            <option value="">Ação...</option>
+                                            <option value="Aprovado">Aprovar</option>
+                                            <option value="Rejeitado">Rejeitar</option>
+                                        </select>
+                                        <input type="text" name="observacoes" placeholder="Obs..." style="width: 120px; margin:0;">
+                                        <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;">Confirmar</button>
+                                    </form>
+                                <% } else { %>
+                                    <span style="font-size: 0.85rem;"><%= p.observacoes || 'Sem observações' %></span>
+                                <% } %>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+
+    <div class="grid grid-cols-2">
+        <!-- CRIAR PAUTA -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Nova Pauta</h2>
+            </div>
+            <form method="POST" action="/funcionario/pauta">
+                <div class="form-group">
+                    <label>Unidade Curricular</label>
+                    <select name="uc_id" required>
+                        <option value="">-- Selecione a UC --</option>
+                        <% ucs.forEach(uc => { %>
+                            <option value="<%= uc._id %>"><%= uc.nome %></option>
+                        <% }) %>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Ano Letivo</label>
+                    <input type="text" name="ano_letivo" placeholder="Ex: 2025/2026" required>
+                </div>
+                <div class="form-group">
+                    <label>Época</label>
+                    <select name="epoca" required>
+                        <option value="">-- Selecione a Época --</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Recurso">Recurso</option>
+                        <option value="Especial">Especial</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-secondary w-full">Gerar Pauta</button>
+            </form>
+        </div>
+
+        <!-- PAUTAS CRIADAS -->
+        <div class="card" style="grid-column: span 1; overflow-y: auto; max-height: 800px;">
+            <div class="card-header">
+                <h2 class="card-title">Pautas & Lançamento de Notas</h2>
+            </div>
+            <% if(pautas.length === 0) { %>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Nenhuma pauta registada.</p>
+            <% } else { %>
+                <% pautas.forEach(pauta => { %>
+                    <div style="background: rgba(255,255,255,0.5); padding: 1rem; border-radius: 8px; border: 1px solid var(--surface-border); margin-bottom: 1.5rem;">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 style="margin:0; font-size: 1.1rem; color: var(--primary);">
+                                    <%= pauta.uc_id ? pauta.uc_id.nome : 'UC N/D' %>
+                                </h3>
+                                <small style="color: var(--text-muted);">
+                                    <%= pauta.ano_letivo %> — Época <%= pauta.epoca %> | 
+                                    Criada por <%= pauta.criado_por ? pauta.criado_por.nome : 'N/D' %>
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <form method="POST" action="/funcionario/notas">
+                            <div class="table-responsive">
+                                <table style="font-size: 0.9rem;">
+                                    <thead>
+                                        <tr>
+                                            <th>Aluno</th>
+                                            <th style="width: 120px;">Nota Final</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% pauta.avaliacoes.forEach(av => { %>
+                                        <tr>
+                                            <td><%= av.aluno_id ? av.aluno_id.nome : 'Removido' %></td>
+                                            <td>
+                                                <input type="text" name="notas[<%= av._id %>]" value="<%= av.nota || '' %>" placeholder="Ex: 15" style="margin:0; padding:0.4rem; text-align:center;">
+                                            </td>
+                                        </tr>
+                                        <% }) %>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm mt-4 w-full" style="padding: 0.5rem;">Guardar Notas</button>
+                        </form>
+                    </div>
+                <% }) %>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
